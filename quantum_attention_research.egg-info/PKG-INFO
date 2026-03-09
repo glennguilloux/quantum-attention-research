@@ -1,0 +1,242 @@
+Metadata-Version: 2.4
+Name: quantum-attention-research
+Version: 0.1.1
+Summary: QFT-based quantum attention layer prototype
+Author-email: Glenn Guilloux <glennguilloux@users.noreply.github.com>
+License: Apache-2.0
+Project-URL: Homepage, https://github.com/glennguilloux/quantum-attention-research
+Project-URL: Documentation, https://github.com/glennguilloux/quantum-attention-research#readme
+Project-URL: Repository, https://github.com/glennguilloux/quantum-attention-research
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: Topic :: Scientific/Engineering :: Physics
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: qiskit>=0.45.0
+Requires-Dist: qiskit-aer>=0.13.0
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: scipy>=1.10.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: isort>=5.12.0; extra == "dev"
+Requires-Dist: mypy>=1.0.0; extra == "dev"
+Requires-Dist: jupyter>=1.0.0; extra == "dev"
+Requires-Dist: nbconvert>=7.0.0; extra == "dev"
+Provides-Extra: torch
+Requires-Dist: torch>=2.0.0; extra == "torch"
+Provides-Extra: all
+Requires-Dist: quantum-attention-research[dev,torch]; extra == "all"
+Dynamic: license-file
+
+# QFT-Based Quantum Attention Layer
+
+A quantum implementation of the attention mechanism using Quantum Fourier Transform (QFT), designed for NISQ devices and hybrid quantum-classical machine learning.
+
+## 🌟 Features
+
+- **QFT-Based Attention**: Token embeddings → QFT → Pairwise attention phases → Inverse QFT
+- **Multi-Head Attention**: Multiple attention heads with combined output
+- **Trainable Parameters**: Gradient computation via parameter-shift rule
+- **Hybrid Integration**: PyTorch-compatible for end-to-end training
+- **Scalability Analysis**: Benchmarks for NISQ feasibility
+
+## 📁 Project Structure
+
+```
+quantum-attention-research/
+├── qft_attention.py              # Basic QFT attention layer
+├── qft_attention_advanced.py     # Multi-head & true MC-RZ implementation
+├── quantum_attention_trainable.py # Trainable layer with gradients
+├── scalability_benchmark.py      # NISQ feasibility analysis
+├── demo.ipynb                    # Interactive Jupyter notebook
+└── README.md                     # This file
+```
+
+## 🚀 Quick Start
+
+```python
+from qft_attention import QFTAttentionLayer
+
+# Create attention layer for 3 tokens
+qa = QFTAttentionLayer(num_tokens=3)
+
+# Set parameters
+phi = [0.5, 1.0, 1.5]      # Token embeddings (RY rotations)
+theta = [0.3, 0.6, 0.9]    # Attention phases (CRZ gates)
+
+# Run the circuit
+probs = qa.run(phi, theta, shots=4096)
+print(probs)  # {'000': 0.785, '100': 0.140, ...}
+```
+
+## 📊 Performance Comparison
+
+| Implementation | Qubits | Depth | CX Gates | |000⟩ Prob |
+|---------------|--------|-------|----------|----------|
+| Simple CRZ    | 3      | 31    | 12       | 78.5%    |
+| True MC-RZ    | 6      | 37    | 18       | 83.4%    |
+
+The True MC-RZ version uses MCXGate for genuine AND-based control, providing correct multi-controlled operations at the cost of additional qubits and gates.
+
+## 🎓 Training the Quantum Attention
+
+```python
+from quantum_attention_trainable import TrainableQFTAttention
+
+# Create trainable layer
+tqa = TrainableQFTAttention(num_tokens=3)
+
+# Define target distribution
+target = {'000': 0.1, '100': 0.4, ...}  # Want |100⟩ to be most probable
+
+# Train using parameter-shift rule
+losses = tqa.train(target, epochs=50, learning_rate=0.05)
+```
+
+### Parameter-Shift Rule
+
+For a parameterized gate U(θ) = exp(-iθG/2) where G has eigenvalues ±1:
+
+```
+∂⟨O⟩/∂θ = (⟨O⟩(θ + π/2) - ⟨O⟩(θ - π/2)) / 2
+```
+
+This enables gradient computation without backpropagation through the quantum circuit.
+
+## 🔗 Hybrid Quantum-Classical Model
+
+```python
+import torch
+import torch.nn as nn
+from quantum_attention_trainable import TrainableQFTAttention
+
+class HybridClassifier(nn.Module):
+    def __init__(self, num_tokens=3, num_classes=2):
+        super().__init__()
+        self.quantum = TrainableQFTAttention(num_tokens)
+        self.classical = nn.Sequential(
+            nn.Linear(2**num_tokens, 16),
+            nn.ReLU(),
+            nn.Linear(16, num_classes)
+        )
+    
+    def forward(self):
+        probs = self.quantum.forward()
+        tensor = torch.tensor([probs.get(f'{i:03b}', 0) for i in range(8)])
+        return self.classical(tensor)
+```
+
+## 📈 Scalability Analysis
+
+| Tokens | Qubits | Depth | CX Gates | NISQ Feasible |
+|--------|--------|-------|----------|---------------|
+| 2      | 2      | 6     | 2        | ✓ Yes         |
+| 3      | 3      | 34    | 16       | ✓ Yes         |
+| 4      | 4      | 53    | 34       | ✓ Yes         |
+| 5      | 5      | 72    | 58       | ✓ Yes         |
+| 6      | 6      | 91    | 88       | ⚠ Marginal    |
+| 7      | 7      | 110   | 124      | ✗ No          |
+| 8      | 8      | 129   | 166      | ✗ No          |
+
+**NISQ Constraints**: depth < 200, CX gates < 100
+
+**Maximum feasible tokens on NISQ**: 6 (Simple CRZ version)
+
+## 🔬 Circuit Architecture
+
+```
+     ┌──────────────────────────────────────────────────────┐
+     │                  QFT Attention Circuit                │
+     └──────────────────────────────────────────────────────┘
+     
+     Token 0 ──RY(φ₀)──┬─────────────────────────────────────
+                       │
+     Token 1 ──RY(φ₁)──┼──[QFT]──[CRZ(θ₀₁)]──[QFT†]───Measure
+                       │         [CRZ(θ₀₂)]
+     Token 2 ──RY(φ₂)──┘         [CRZ(θ₁₂)]
+     
+     Steps:
+     1. Token Embedding: RY rotations encode token features
+     2. QFT: Transform to frequency domain
+     3. Attention: CRZ gates apply pairwise attention phases
+     4. Inverse QFT: Return to computational basis
+     5. Measure: Sample output distribution
+```
+
+## 🛠️ Installation
+
+```bash
+# Clone the repository
+cd /path/to/quantum-attention-research
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install qiskit qiskit-aer numpy matplotlib
+
+# Optional: Install PyTorch for hybrid training
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# Optional: Install Jupyter for notebooks
+pip install jupyter
+```
+
+## 📚 API Reference
+
+### QFTAttentionLayer
+
+```python
+qa = QFTAttentionLayer(num_tokens=3)
+probs = qa.run(phi, theta, shots=4096)
+```
+
+### MultiHeadQFTAttention
+
+```python
+mha = MultiHeadQFTAttention(num_tokens=3, num_heads=2)
+probs = mha.run(phi_per_head, theta_per_head, shots=4096)
+```
+
+### TrainableQFTAttention
+
+```python
+tqa = TrainableQFTAttention(num_tokens=3)
+losses = tqa.train(target_probs, epochs=50, learning_rate=0.05)
+gradients = tqa.compute_gradients(target_probs)
+```
+
+## 🎯 Next Steps
+
+1. **Error Mitigation**: Implement measurement error mitigation for NISQ devices
+2. **Hardware Testing**: Run on real quantum hardware (IBM Q, IonQ, etc.)
+3. **Benchmarking**: Compare against classical attention on small datasets
+4. **Optimization**: Explore gate cancellation and circuit optimization
+5. **Applications**: Test on specific attention patterns (causal, sparse, etc.)
+
+## 📖 References
+
+- [Qiskit Documentation](https://qiskit.org/documentation/)
+- [Parameter-Shift Rule Tutorial](https://qiskit.org/documentation/tutorials/algorithms/02_parameter_shift.html)
+- [QFT in Qiskit](https://qiskit.org/documentation/stubs/qiskit.circuit.library.QFT.html)
+- [Attention Is All You Need](https://arxiv.org/abs/1706.03762) (Original Transformer paper)
+
+## 📄 License
+
+MIT License - Feel free to use and modify for your research!
+
+---
+
+**Created with ❤️ for quantum machine learning research**

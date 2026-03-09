@@ -1,0 +1,4 @@
+[console_scripts]
+qft-benchmark = qft_attention.cli:main
+qft-hardware = qft_attention.cli:main
+qft-train = qft_attention.cli:main

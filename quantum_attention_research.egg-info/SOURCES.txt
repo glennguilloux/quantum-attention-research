@@ -1,0 +1,12 @@
+LICENSE
+README.md
+pyproject.toml
+qft_attention/__init__.py
+qft_attention/cli.py
+quantum_attention_research.egg-info/PKG-INFO
+quantum_attention_research.egg-info/SOURCES.txt
+quantum_attention_research.egg-info/dependency_links.txt
+quantum_attention_research.egg-info/entry_points.txt
+quantum_attention_research.egg-info/requires.txt
+quantum_attention_research.egg-info/top_level.txt
+tests/test_qft_attention.py
