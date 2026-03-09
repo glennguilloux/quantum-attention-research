@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quantum-attention"
+version = "1.0.0"
+description = "QFT-based Quantum Attention Layer for Hybrid Quantum-Classical Neural Networks"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Quantum Attention Research Team"}
+]
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "qiskit>=0.45.0",
+    "qiskit-aer>=0.13.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.0.0",
+]
+torch = [
+    "torch>=2.0.0",
+]
+all = [
+    "quantum-attention[dev,torch]",
+]
+
+[project.urls]
+Homepage = "https://github.com/quantum-attention/quantum-attention-research"
+Documentation = "https://github.com/quantum-attention/quantum-attention-research#readme"
+Repository = "https://github.com/quantum-attention/quantum-attention-research"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["qft_attention*", "quantum_attention*", "noise_simulation*", "parameter_shift*", "hybrid_training*", "classical_comparison*", "hardware_aware*", "pytorch_integration*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
